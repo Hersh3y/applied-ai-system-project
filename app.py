@@ -1,7 +1,12 @@
 import streamlit as st
 from pawpal_system import Owner, Pet, Task, Schedule
+from rag_agent import PetCareRAG
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
+
+# Initialize RAG agent in session state
+if 'rag_agent' not in st.session_state:
+    st.session_state.rag_agent = PetCareRAG()
 
 st.title("🐾 PawPal+")
 
@@ -192,5 +197,13 @@ if st.button("Generate schedule"):
         st.markdown("#### Full Daily Plan")
         st.write(schedule.get_plan_with_reasoning())
         
+        # --- RAG FEATURE INTEGRATION ---
+        st.markdown("#### 🤖 AI Pet Care Advice (RAG)")
+        with st.spinner("Generating personalized AI advice using retrieved knowledge..."):
+            pet_summary = st.session_state.pet.get_health_info()
+            task_context = ", ".join([t.title for t in st.session_state.pet.get_required_tasks()])
+            advice = st.session_state.rag_agent.get_advice(pet_summary, task_context)
+            st.info(advice)
+            
         # Store in session state for potential future use/export
         st.session_state.current_schedule = schedule

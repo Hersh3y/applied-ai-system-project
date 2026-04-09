@@ -1,86 +1,48 @@
-classDiagram
-    %% Utility Functions
-    class TimeFunctions {
-        +parse_time(time_str) datetime
-        +time_to_minutes(time_str) int
-        +minutes_to_time(minutes) str
-    }
-
-    %% Core Domain Classes
-    class Task {
-        -title: str
-        -description: str
-        -duration_minutes: int
-        -priority: str
-        -task_type: str
-        -frequency: str
-        -required_time: Optional[str]
-        -completion_status: bool
-        -dependencies: List[str]
-        -task_date: Optional[datetime]
-        +get_duration() int
-        +is_urgent() bool
-        +mark_complete() void
-    }
-
-    class Pet {
-        -name: str
-        -species: str
-        -age: int
-        -special_needs: List[str]
-        -care_requirements: Dict[str, Any]
-        -tasks: List[Task]
-        +get_required_tasks() List[Task]
-        +add_task(task) void
-        +add_special_need(need) void
-        +mark_task_complete(task_title) bool
-        +get_health_info() str
-    }
-
-    class Owner {
-        -name: str
-        -available_hours_per_day: float
-        -preferred_activity_times: List[str]
-        -preferences: Dict[str, Any]
-        -pets: List[Pet]
-        +add_pet(pet) void
-        +get_all_tasks() List[Task]
-        +filter_tasks(pet_name, completion_status) List[Task]
-        +get_available_time() float
-        +get_preference(key) Any
-        +set_preference(key, value) void
-    }
-
-    %% Scheduling & Conflict Detection
-    class Schedule {
-        -owner: Owner
-        -pet: Pet
-        -tasks: List[Task]
-        -daily_plan: List~(Task, str)~
-        -start_time: str
-        -end_time: str
-        -start_minutes: int
-        -end_minutes: int
-        +add_task(task) void
-        +sort_by_time() List[Task]
-        -_sort_tasks_by_priority() List[Task]
-        +generate_schedule() List~(Task, str)~
-        +can_schedule_at(task, time_minutes) bool
-        +get_plan_with_reasoning() str
-        +detect_conflicts(buffer_minutes) Dict[str, List[str]]
-        +get_conflict_warnings(buffer_minutes) List[str]
-        +detect_cross_pet_conflicts(buffer_minutes) Dict[str, List[str]]
-        +get_cross_pet_warnings(buffer_minutes) List[str]
-    }
-
-    %% Relationships
-    Owner "1" --> "*" Pet : owns
-    Pet "1" --> "*" Task : contains
-    Task --> Task : dependencies (self-ref)
+flowchart TD
+    %% Human/User Input
+    User((User / Pet Owner))
     
-    Schedule --> Owner : constrains_based_on
-    Schedule --> Pet : schedules_for
-    Schedule --> Task : arranges
+    %% Inputs
+    subgraph UI [Streamlit Frontend / app.py]
+        Input[Pet Profile & Care Tasks]
+    end
     
-    Owner --> Task : filters_across_pets
-    Pet --> Schedule : generates_schedule_for
+    %% Core Logic
+    subgraph Core [System Logic / pawpal_system.py]
+        Scheduler[Schedule Generator]
+        Conflict[Conflict Detector]
+    end
+    
+    %% AI/RAG Components
+    subgraph AI [AI RAG System / rag_agent.py]
+        Retriever[Knowledge Retriever / TF-IDF]
+        KB[(Local Pet Care Knowledge Base)]
+        Generator[OpenAI LLM Generator]
+    end
+    
+    %% Evaluation / Testing
+    subgraph QA [Quality Assurance]
+        Tests[Pytest Suite / Automated Testing]
+        HumanEval[Human Evaluator / Guardrails]
+    end
+    
+    %% Data Flow
+    User -->|Enters details| Input
+    Input -->|Pet data & Tasks| Scheduler
+    Scheduler <-->|Checks| Conflict
+    
+    %% RAG Flow
+    Scheduler -->|Context: Health & Tasks| Retriever
+    Retriever <-->|Queries for relevant facts| KB
+    Retriever -->|Top K Facts| Generator
+    Input -->|Raw context| Generator
+    
+    %% Output
+    Generator -->|Personalized AI Advice| Output[Final UI Output: Schedule + Advice]
+    Scheduler -->|Generated Plan| Output
+    Output -->|Displayed to| User
+    
+    %% Testing & Eval Links
+    Tests -.->|Validates logic & retrieval| Core
+    Tests -.->|Validates fallback| AI
+    HumanEval -.->|Reviews AI advice quality| Output
