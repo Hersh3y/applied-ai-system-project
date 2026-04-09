@@ -1,0 +1,48 @@
+flowchart TD
+    %% Human/User Input
+    User((User / Pet Owner))
+    
+    %% Inputs
+    subgraph UI [Streamlit Frontend / app.py]
+        Input[Pet Profile & Care Tasks]
+    end
+    
+    %% Core Logic
+    subgraph Core [System Logic / pawpal_system.py]
+        Scheduler[Schedule Generator]
+        Conflict[Conflict Detector]
+    end
+    
+    %% AI/RAG Components
+    subgraph AI [AI RAG System / rag_agent.py]
+        Retriever[Knowledge Retriever / TF-IDF]
+        KB[(Local Pet Care Knowledge Base)]
+        Generator[OpenAI LLM Generator]
+    end
+    
+    %% Evaluation / Testing
+    subgraph QA [Quality Assurance]
+        Tests[Pytest Suite / Automated Testing]
+        HumanEval[Human Evaluator / Guardrails]
+    end
+    
+    %% Data Flow
+    User -->|Enters details| Input
+    Input -->|Pet data & Tasks| Scheduler
+    Scheduler <-->|Checks| Conflict
+    
+    %% RAG Flow
+    Scheduler -->|Context: Health & Tasks| Retriever
+    Retriever <-->|Queries for relevant facts| KB
+    Retriever -->|Top K Facts| Generator
+    Input -->|Raw context| Generator
+    
+    %% Output
+    Generator -->|Personalized AI Advice| Output[Final UI Output: Schedule + Advice]
+    Scheduler -->|Generated Plan| Output
+    Output -->|Displayed to| User
+    
+    %% Testing & Eval Links
+    Tests -.->|Validates logic & retrieval| Core
+    Tests -.->|Validates fallback| AI
+    HumanEval -.->|Reviews AI advice quality| Output
